@@ -7,28 +7,41 @@ import { env } from '../config/env';
  * Uses the official googleapis library.
  */
 class GoogleClient {
-  private static instance: GoogleClient;
-  private oauth2Client: Auth.OAuth2Client;
+  private static instance: GoogleClient | null = null;
+  private oauth2Client: Auth.OAuth2Client | null = null;
   private calendar: calendar_v3.Calendar | null = null;
   private gmail: ReturnType<typeof google.gmail> | null = null;
+  private initialized = false;
 
   private constructor() {
+    // Lazy initialization - don't set up OAuth2 until credentials are available
+  }
+
+  private initialize(): void {
+    if (this.initialized) return;
+
+    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.GOOGLE_REFRESH_TOKEN) {
+      console.warn('[GoogleClient] Google credentials not configured - Google features disabled');
+      return;
+    }
+
     this.oauth2Client = new google.auth.OAuth2(
       env.GOOGLE_CLIENT_ID,
       env.GOOGLE_CLIENT_SECRET
     );
 
-    // Set the refresh token - the library handles access token refresh automatically
     this.oauth2Client.setCredentials({
       refresh_token: env.GOOGLE_REFRESH_TOKEN,
     });
 
-    // Listen for token refresh events
     this.oauth2Client.on('tokens', (tokens) => {
       if (tokens.access_token) {
         console.log('[GoogleClient] Access token refreshed');
       }
     });
+
+    this.initialized = true;
+    console.log('[GoogleClient] Initialized successfully');
   }
 
   public static getInstance(): GoogleClient {
@@ -38,14 +51,20 @@ class GoogleClient {
     return GoogleClient.instance;
   }
 
-  public getCalendar(): calendar_v3.Calendar {
+  public getCalendar(): calendar_v3.Calendar | null {
+    this.initialize();
+    if (!this.oauth2Client) return null;
+    
     if (!this.calendar) {
       this.calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
     }
     return this.calendar;
   }
 
-  public getGmail(): ReturnType<typeof google.gmail> {
+  public getGmail(): ReturnType<typeof google.gmail> | null {
+    this.initialize();
+    if (!this.oauth2Client) return null;
+    
     if (!this.gmail) {
       this.gmail = google.gmail({ version: 'v1', auth: this.oauth2Client });
     }
@@ -53,9 +72,16 @@ class GoogleClient {
   }
 
   public async healthCheck(): Promise<boolean> {
+    this.initialize();
+    if (!this.oauth2Client) {
+      console.log('[GoogleClient] No credentials configured');
+      return false;
+    }
+    
     try {
-      // Try to get calendar list as a health check
-      await this.getCalendar().calendarList.list({ maxResults: 1 });
+      const calendar = this.getCalendar();
+      if (!calendar) return false;
+      await calendar.calendarList.list({ maxResults: 1 });
       return true;
     } catch (error) {
       console.error('[GoogleClient] Health check failed:', error);
@@ -63,7 +89,12 @@ class GoogleClient {
     }
   }
 
-  public getAuth(): Auth.OAuth2Client {
+  public isConfigured(): boolean {
+    return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REFRESH_TOKEN);
+  }
+
+  public getAuth(): Auth.OAuth2Client | null {
+    this.initialize();
     return this.oauth2Client;
   }
 }

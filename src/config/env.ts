@@ -9,7 +9,11 @@ const envSchema = z.object({
   API_KEY: z.string().min(1, 'API_KEY is required for n8n authentication'),
   
   // PostgreSQL
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DB_USER: z.string().min(1, 'DB_USER is required'),
+  DB_HOST: z.string().min(1, 'DB_HOST is required'),
+  DB_PASSWORD: z.string().min(1, 'DB_PASSWORD is required'),
+  DB_NAME: z.string().min(1, 'DB_NAME is required'),
+  DB_PORT: z.string().default('5432'),
   
   // Google OAuth2
   GOOGLE_CLIENT_ID: z.string().min(1, 'GOOGLE_CLIENT_ID is required'),

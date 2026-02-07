@@ -3,16 +3,27 @@ import { actionLogRepository } from '../repositories/ActionLogRepository';
 import { CalendarEvent, CreateEventRequest, ApiError } from '../types';
 
 export class CalendarService {
-  private calendar = googleClient.getCalendar();
+  private getCalendar() {
+    const calendar = googleClient.getCalendar();
+    if (!calendar) {
+      throw {
+        code: 'GOOGLE_NOT_CONFIGURED',
+        message: 'Google Calendar is not configured. Please set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REFRESH_TOKEN.',
+        retry: false,
+      } as ApiError;
+    }
+    return calendar;
+  }
 
   async getUpcomingEvents(hours: number = 24): Promise<CalendarEvent[]> {
     const start = Date.now();
     
     try {
+      const calendar = this.getCalendar();
       const now = new Date();
       const timeMax = new Date(now.getTime() + hours * 60 * 60 * 1000);
 
-      const response = await this.calendar.events.list({
+      const response = await calendar.events.list({
         calendarId: 'primary',
         timeMin: now.toISOString(),
         timeMax: timeMax.toISOString(),
@@ -39,11 +50,12 @@ export class CalendarService {
 
       return events;
     } catch (error) {
-      const apiError: ApiError = {
-        code: 'GOOGLE_CALENDAR_ERROR',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        retry: true,
-      };
+      const apiError: ApiError = error as ApiError;
+      if (!apiError.code) {
+        apiError.code = 'GOOGLE_CALENDAR_ERROR';
+        apiError.message = error instanceof Error ? error.message : 'Unknown error';
+        apiError.retry = true;
+      }
       
       await actionLogRepository.log(
         'google_calendar_list',
@@ -60,10 +72,11 @@ export class CalendarService {
     const start = Date.now();
     
     try {
+      const calendar = this.getCalendar();
       const startDate = new Date(request.start);
       const endDate = new Date(startDate.getTime() + request.duration_min * 60 * 1000);
 
-      const response = await this.calendar.events.insert({
+      const response = await calendar.events.insert({
         calendarId: 'primary',
         requestBody: {
           summary: request.summary,
@@ -98,11 +111,12 @@ export class CalendarService {
 
       return event;
     } catch (error) {
-      const apiError: ApiError = {
-        code: 'GOOGLE_CALENDAR_CREATE_ERROR',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        retry: true,
-      };
+      const apiError: ApiError = error as ApiError;
+      if (!apiError.code) {
+        apiError.code = 'GOOGLE_CALENDAR_CREATE_ERROR';
+        apiError.message = error instanceof Error ? error.message : 'Unknown error';
+        apiError.retry = true;
+      }
       
       await actionLogRepository.log(
         'google_calendar_insert',

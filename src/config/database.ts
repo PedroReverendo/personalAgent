@@ -7,7 +7,11 @@ class Database {
 
   private constructor() {
     this.pool = new Pool({
-      connectionString: env.DATABASE_URL,
+      user: env.DB_USER,
+      host: env.DB_HOST,
+      password: env.DB_PASSWORD,
+      database: env.DB_NAME,
+      port: parseInt(env.DB_PORT),
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
