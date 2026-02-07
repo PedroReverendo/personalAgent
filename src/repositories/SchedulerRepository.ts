@@ -1,6 +1,6 @@
+import { randomUUID } from 'crypto';
 import { db } from '../config/database';
 import { ScheduledTask, TaskStatus, TaskType } from '../types';
-import { v4 as uuidv4 } from 'uuid';
 
 export class SchedulerRepository {
   async create(
@@ -8,7 +8,7 @@ export class SchedulerRepository {
     payload: Record<string, unknown>,
     executeAt: Date
   ): Promise<ScheduledTask> {
-    const id = uuidv4();
+    const id = randomUUID();
     const query = `
       INSERT INTO scheduled_tasks (id, task_type, payload, execute_at, status)
       VALUES ($1, $2, $3, $4, 'PENDING')
