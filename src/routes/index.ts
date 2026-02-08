@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { calendarController } from '../controllers/CalendarController';
 import { schedulerController } from '../controllers/SchedulerController';
 import { mailController } from '../controllers/MailController';
+import { memoryController } from '../controllers/MemoryController';
 import { db } from '../config/database';
 import { googleClient } from '../clients/GoogleClient';
 import { HealthStatus, ApiResponse } from '../types';
@@ -23,6 +24,12 @@ router.post('/api/v1/scheduler/remind', (req, res) => schedulerController.create
 // MAIL ROUTES
 // ============================================
 router.get('/api/v1/mail/search', (req, res) => mailController.search(req, res));
+
+// ============================================
+// MEMORY ROUTES (Vector Search)
+// ============================================
+router.post('/api/v1/memories', (req, res) => memoryController.saveMemory(req, res));
+router.post('/api/v1/context/retrieve', (req, res) => memoryController.retrieveContext(req, res));
 
 // ============================================
 // HEALTH CHECK
@@ -49,3 +56,4 @@ router.get('/health', async (_req, res) => {
 });
 
 export default router;
+

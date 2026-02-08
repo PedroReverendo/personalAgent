@@ -15,13 +15,16 @@ const envSchema = z.object({
   DB_NAME: z.string().min(1, 'DB_NAME is required'),
   DB_PORT: z.string().default('5432'),
   
-  // Google OAuth2
-  GOOGLE_CLIENT_ID: z.string().min(1, 'GOOGLE_CLIENT_ID is required'),
-  GOOGLE_CLIENT_SECRET: z.string().min(1, 'GOOGLE_CLIENT_SECRET is required'),
-  GOOGLE_REFRESH_TOKEN: z.string().min(1, 'GOOGLE_REFRESH_TOKEN is required'),
+  // OpenAI (for embeddings)
+  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required for embeddings'),
+  
+  // Google OAuth2 (optional)
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REFRESH_TOKEN: z.string().optional(),
   
   // n8n Webhook (for task notifications)
-  N8N_WEBHOOK_URL: z.string().url().optional(),
+  N8N_WEBHOOK_URL: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
